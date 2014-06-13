@@ -1,0 +1,94 @@
+<?xml version="1.0"?>
+<project name="SimpleConsoleExample" default="resolve" basedir="." xmlns:ivy="antlib:org.apache.ivy.ant">
+
+  <property environment="env"/>
+
+  <property name="src.dir" value="src"/>
+  <property name="resource.dir" value="${src.dir}/main/resources"/>
+  <property name="lib.dir" value="lib"/>
+  <property name="dist.dir" value="dist"/>
+  <property name="web.dir" value="${src.dir}/main/webapp"/>
+  <property name="build.dir" value="build"/>
+  <property name="ivy.report.dir" value="report"/>
+
+  <property name="build.classes" value="${build.dir}/classes"/>
+
+  <!-- Properties after the include may be set in the include -->
+  <property file="build.properties"/>
+
+  <property name="war.file" value="app.war"/>
+  <property name="deploy.dir" value="${env.CATALINA_HOME}/webapps"/>
+
+  <property name="java.version" value="1.8"/>
+  <property name="build.compiler" value="modern"/>
+  <property name="compression" value="0"/>
+
+  <path id="project.class.path">
+    <pathelement path="${lib.dir}/*"/>
+    <fileset dir="${lib.dir}">
+      <include name="*.jar"/>
+    </fileset>
+  </path>
+
+  <!-- ================================
+         standard
+       ================================ -->
+
+  <target name="clean" description=".... delete all generated files and dirs">
+    <delete dir="${lib.dir}"/>
+    <delete dir="${build.dir}"/>
+    <delete dir="${dist.dir}"/>
+    <delete dir="${dist.dir}"/>
+    <delete dir="${ivy.report.dir}"/>
+  </target>
+
+  <target name="compile" description=".... clean build dir and compile">
+    <delete dir="${build.dir}"/>
+    <mkdir dir="${build.dir}"/>
+    <mkdir dir="${build.classes}"/>
+    <javac srcdir="${src.dir}"
+           destdir="${build.classes}"
+           classpathref="project.class.path"
+           includeAntRuntime="false"
+           />
+  </target>
+
+  <!-- ================================
+         ivy
+       ================================ -->
+
+  <target name="report" description=".... generate ivy dep report">
+    <mkdir dir="report" />
+    <ivy:resolve type="${ivy.resolve.types}"/>
+    <ivy:report todir="${ivy.report.dir}" />
+  </target>
+
+  <target name="resolve" description=".... resolve / retrieve deps">
+    <delete dir="${lib.dir}"/>
+    <ivy:retrieve/>
+  </target>
+
+  <!-- ================================
+         deploying
+       ================================ -->
+
+  <target name="war" depends="compile" description=".... makes the deployable war">
+    <delete dir="${dist.dir}"/>
+    <war destfile="${dist.dir}/${war.file}"
+         needxmlfile='false'
+         level="${compression}"
+         >
+      <fileset dir="${web.dir}"/>
+      <fileset file="${resource.dir}/logback.xml"/>
+      <lib dir="${lib.dir}"/>
+      <classes dir="${build.classes}"/>
+      <zipfileset file="${resource.dir}/logback.xml" prefix="WEB-INF/classes"/>
+    </war>
+  </target>
+
+  <target name="deploy" depends="war" description=".... makes and deploys the war">
+    <delete file="${deploy.dir}/${war.file}"/>
+    <copy file="${dist.dir}/${war.file}" tofile="${deploy.dir}/${war.file}"/>
+  </target>
+
+</project>
